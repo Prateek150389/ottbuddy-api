@@ -8,6 +8,7 @@ import { HealthModule } from './health/health.module';
 import { TmdbModule } from './tmdb/tmdb.module';
 import { SearchModule } from './search/search.module';
 import { TitlesModule } from './titles/titles.module';
+import { TrendingModule } from './trending/trending.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { TitlesModule } from './titles/titles.module';
     TmdbModule,
     SearchModule,
     TitlesModule,
+    TrendingModule,
   ],
 
   controllers: [AppController],

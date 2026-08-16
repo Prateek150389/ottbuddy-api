@@ -295,6 +295,33 @@ export class TmdbService {
     }
   }
 
+  async getTrending(
+    timeWindow: 'day' | 'week' = 'day',
+  ): Promise<TmdbSearchItem[]> {
+    const url = new URL(
+      `${this.baseUrl}/trending/all/${timeWindow}`,
+    );
+
+    url.searchParams.set('api_key', this.getApiKey());
+    url.searchParams.set('language', 'en-US');
+
+    try {
+      const response = await this.fetchWithRetry(url);
+      const data =
+        (await response.json()) as TmdbSearchResponse;
+
+      return data.results.filter(
+        (item) =>
+          item.media_type === 'movie' ||
+          item.media_type === 'tv',
+      );
+    } catch {
+      throw new InternalServerErrorException(
+        'Unable to load trending titles right now.',
+      );
+    }
+  }
+
   getPosterUrl(
     posterPath?: string | null,
     size: 'w342' | 'w500' | 'w780' = 'w500',
