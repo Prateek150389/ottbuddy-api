@@ -7,5 +7,6 @@ import { TitlesService } from './titles.service';
   imports: [TmdbModule],
   controllers: [TitlesController],
   providers: [TitlesService],
+  exports: [TitlesService],
 })
 export class TitlesModule {}

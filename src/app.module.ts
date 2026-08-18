@@ -9,6 +9,7 @@ import { TmdbModule } from './tmdb/tmdb.module';
 import { SearchModule } from './search/search.module';
 import { TitlesModule } from './titles/titles.module';
 import { TrendingModule } from './trending/trending.module';
+import { TodaysPickModule } from './todays-pick/todays-pick.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { TrendingModule } from './trending/trending.module';
     SearchModule,
     TitlesModule,
     TrendingModule,
+    TodaysPickModule,
   ],
 
   controllers: [AppController],
