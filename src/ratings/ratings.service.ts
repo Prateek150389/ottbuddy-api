@@ -1,11 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import {
-  DynamoDBClient,
-} from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
   DynamoDBDocumentClient,
-  PutCommand,
   GetCommand,
+  TransactWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
 
 export type MediaType = 'movie' | 'tv';
@@ -43,6 +41,20 @@ export class RatingsService {
     const sk = `RATING#${input.mediaType}#${input.tmdbId}`;
     const now = new Date().toISOString();
 
+    // Read the current rating first so changing 3 -> 5 adjusts the
+    // aggregate by +2 instead of counting another user.
+    const existingResult = await this.client.send(
+      new GetCommand({
+        TableName: this.tableName,
+        Key: { pk, sk },
+      }),
+    );
+
+    const existingRating =
+      typeof existingResult.Item?.rating === 'number'
+        ? existingResult.Item.rating
+        : null;
+
     const item = {
       pk,
       sk,
@@ -54,10 +66,42 @@ export class RatingsService {
       updatedAt: now,
     };
 
+    const summaryPk = `TITLE#${input.mediaType}#${input.tmdbId}`;
+    const summarySk = 'RATING_SUMMARY';
+
+    const ratingDelta =
+      existingRating === null
+        ? input.rating
+        : input.rating - existingRating;
+
+    const countDelta = existingRating === null ? 1 : 0;
+
     await this.client.send(
-      new PutCommand({
-        TableName: this.tableName,
-        Item: item,
+      new TransactWriteCommand({
+        TransactItems: [
+          {
+            Put: {
+              TableName: this.tableName,
+              Item: item,
+            },
+          },
+          {
+            Update: {
+              TableName: this.tableName,
+              Key: {
+                pk: summaryPk,
+                sk: summarySk,
+              },
+              UpdateExpression:
+                'ADD ratingSum :ratingDelta, ratingCount :countDelta SET updatedAt = :updatedAt',
+              ExpressionAttributeValues: {
+                ':ratingDelta': ratingDelta,
+                ':countDelta': countDelta,
+                ':updatedAt': now,
+              },
+            },
+          },
+        ],
       }),
     );
 
@@ -90,5 +134,28 @@ export class RatingsService {
     );
 
     return result.Item ?? null;
+  }
+
+  async getRatingSummary(mediaType: MediaType, tmdbId: number) {
+    const result = await this.client.send(
+      new GetCommand({
+        TableName: this.tableName,
+        Key: {
+          pk: `TITLE#${mediaType}#${tmdbId}`,
+          sk: 'RATING_SUMMARY',
+        },
+      }),
+    );
+
+    const ratingSum = Number(result.Item?.ratingSum ?? 0);
+    const ratingCount = Number(result.Item?.ratingCount ?? 0);
+
+    return {
+      average:
+        ratingCount > 0
+          ? Number((ratingSum / ratingCount).toFixed(1))
+          : 0,
+      count: ratingCount,
+    };
   }
 }

@@ -49,6 +49,26 @@ export class RatingsController {
 
     return this.ratingsService.saveRating(body);
   }
+    @Get('summary/:mediaType/:tmdbId')
+  async getRatingSummary(
+    @Param('mediaType') mediaType: MediaType,
+    @Param('tmdbId') tmdbId: string,
+  ) {
+    if (!['movie', 'tv'].includes(mediaType)) {
+      throw new BadRequestException('mediaType must be movie or tv');
+    }
+
+    const parsedTmdbId = Number(tmdbId);
+
+    if (!Number.isInteger(parsedTmdbId) || parsedTmdbId <= 0) {
+      throw new BadRequestException('Invalid tmdbId');
+    }
+
+    return this.ratingsService.getRatingSummary(
+      mediaType,
+      parsedTmdbId,
+    );
+  }
 
   @Get(':mediaType/:tmdbId')
   async getRating(
