@@ -11,8 +11,9 @@ import { TitlesModule } from './titles/titles.module';
 import { TrendingModule } from './trending/trending.module';
 import { TodaysPickModule } from './todays-pick/todays-pick.module';
 
+import { RatingsModule } from './ratings/ratings.module';
 @Module({
-  imports: [
+  imports: [RatingsModule, 
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
